@@ -1,0 +1,99 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: job_redis
+    networks:
+      - jobnet
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  api:
+    build: ./api
+    container_name: job_api
+    networks:
+      - jobnet
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  worker:
+    build: ./worker
+    container_name: job_worker
+    networks:
+      - jobnet
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  frontend:
+    build: ./frontend
+    container_name: job_frontend
+    networks:
+      - jobnet
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: "http://api:8000"
+      PORT: "3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  jobnet:
+    driver: bridge
