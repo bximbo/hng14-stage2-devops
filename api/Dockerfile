@@ -13,15 +13,17 @@ COPY requirements.txt .
 
 RUN pip wheel --no-cache-dir --wheel-dir /build/wheels -r requirements.txt
 
-FROM python:3.12-slim
+FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 
 RUN apt-get update \
     && apt-get upgrade -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd -u 10001 -M appuser \
-    && pip install --no-cache-dir --upgrade \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --uid 10001 --user-group --no-create-home --shell /usr/sbin/nologin appuser
+
+RUN pip install --no-cache-dir --upgrade \
         pip==24.3.1 \
         setuptools==75.6.0 \
         wheel==0.45.1
@@ -33,6 +35,8 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.t
     && rm -rf /wheels requirements.txt
 
 COPY main.py .
+
+RUN chown -R appuser:appuser /app
 
 USER appuser
 
