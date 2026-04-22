@@ -42,23 +42,22 @@ jobs:
           npm ci --prefix frontend
 
       - name: Lint JavaScript
-        run: |
-          npm run --prefix frontend lint || npx eslint frontend/
+        run: npm run lint --prefix frontend
 
-      - name: Lint Dockerfiles
-        uses: hadolint/hadolint-action@v3
+      - name: Lint Dockerfile (api)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: api/Dockerfile
           ignore: DL3008,DL3009
 
-      - name: Lint Dockerfiles (worker)
-        uses: hadolint/hadolint-action@v3
+      - name: Lint Dockerfile (worker)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: worker/Dockerfile
           ignore: DL3008,DL3009
 
-      - name: Lint Dockerfiles (frontend)
-        uses: hadolint/hadolint-action@v3
+      - name: Lint Dockerfile (frontend)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: frontend/Dockerfile
           ignore: DL3008,DL3009
@@ -107,7 +106,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver-options: image=moby/buildkit:latest
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
 
       - name: Build API image
         uses: docker/build-push-action@v5
@@ -173,37 +174,57 @@ jobs:
           path: /tmp
 
       - name: Load images
+        run: docker load -i /tmp/images-${{ github.sha }}.tar
+
+      - name: Install Trivy
         run: |
-          docker load -i /tmp/images-${{ github.sha }}.tar
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin v0.70.0
 
       - name: Scan API image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: localhost:5000/api:${{ github.sha }}
-          format: 'sarif'
-          output: 'api.sarif'
-          severity: 'CRITICAL'
-          exit-code: '1'
+        run: |
+          trivy image \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --format table \
+            localhost:5000/api:${{ github.sha }}
+          trivy image \
+            --severity CRITICAL \
+            --format sarif \
+            --output api.sarif \
+            localhost:5000/api:${{ github.sha }}
 
       - name: Scan Worker image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: localhost:5000/worker:${{ github.sha }}
-          format: 'sarif'
-          output: 'worker.sarif'
-          severity: 'CRITICAL'
-          exit-code: '1'
+        run: |
+          trivy image \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --format table \
+            localhost:5000/worker:${{ github.sha }}
+          trivy image \
+            --severity CRITICAL \
+            --format sarif \
+            --output worker.sarif \
+            localhost:5000/worker:${{ github.sha }}
 
       - name: Scan Frontend image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: localhost:5000/frontend:${{ github.sha }}
-          format: 'sarif'
-          output: 'frontend.sarif'
-          severity: 'CRITICAL'
-          exit-code: '1'
+        run: |
+          trivy image \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --format table \
+            localhost:5000/frontend:${{ github.sha }}
+          trivy image \
+            --severity CRITICAL \
+            --format sarif \
+            --output frontend.sarif \
+            localhost:5000/frontend:${{ github.sha }}
 
       - name: Upload SARIF reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: trivy-sarif-reports
