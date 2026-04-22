@@ -177,6 +177,14 @@ jobs:
         run: |
           docker load -i /tmp/images-${{ github.sha }}.tar
 
+      - name: Diagnostic scan (print CRITICAL findings)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: localhost:5000/api:${{ github.sha }}
+          format: 'table'
+          severity: 'CRITICAL'
+          exit-code: '0'
+
       - name: Scan API image
         uses: aquasecurity/trivy-action@master
         with:
