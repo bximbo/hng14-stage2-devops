@@ -19,7 +19,7 @@ RUN useradd -u 10001 -M appuser
 COPY --from=builder /build/wheels /wheels
 COPY --from=builder /build/requirements.txt .
 
-RUN pip install --no-cache --no-index --find-links=/wheels -r requirements.txt && \
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt && \
     rm -rf /wheels
 
 COPY main.py .
