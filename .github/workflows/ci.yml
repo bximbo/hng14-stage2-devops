@@ -45,20 +45,20 @@ jobs:
         run: |
           npm run --prefix frontend lint || npx eslint frontend/
 
-      - name: Lint Dockerfiles
-        uses: hadolint/hadolint-action@v3
+      - name: Lint Dockerfile (api)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: api/Dockerfile
           ignore: DL3008,DL3009
 
-      - name: Lint Dockerfiles (worker)
-        uses: hadolint/hadolint-action@v3
+      - name: Lint Dockerfile (worker)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: worker/Dockerfile
           ignore: DL3008,DL3009
 
-      - name: Lint Dockerfiles (frontend)
-        uses: hadolint/hadolint-action@v3
+      - name: Lint Dockerfile (frontend)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: frontend/Dockerfile
           ignore: DL3008,DL3009
