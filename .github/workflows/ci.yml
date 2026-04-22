@@ -42,8 +42,7 @@ jobs:
           npm ci --prefix frontend
 
       - name: Lint JavaScript
-        run: |
-          npm run --prefix frontend lint || npx eslint frontend/
+        run: npm run lint --prefix frontend
 
       - name: Lint Dockerfile (api)
         uses: hadolint/hadolint-action@v3.1.0
