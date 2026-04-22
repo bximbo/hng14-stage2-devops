@@ -4,6 +4,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: job_redis
+    restart: unless-stopped
     networks:
       - jobnet
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
@@ -22,6 +23,7 @@ services:
   api:
     build: ./api
     container_name: job_api
+    restart: unless-stopped
     networks:
       - jobnet
     environment:
@@ -46,6 +48,7 @@ services:
   worker:
     build: ./worker
     container_name: job_worker
+    restart: unless-stopped
     networks:
       - jobnet
     environment:
@@ -72,6 +75,7 @@ services:
   frontend:
     build: ./frontend
     container_name: job_frontend
+    restart: unless-stopped
     networks:
       - jobnet
     ports:
