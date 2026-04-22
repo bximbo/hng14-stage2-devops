@@ -22,7 +22,7 @@ COPY --from=builder /build/requirements.txt .
 RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt && \
     rm -rf /wheels
 
-COPY worker.py healthcheck.py .
+COPY worker.py healthcheck.py ./
 
 USER appuser
 
